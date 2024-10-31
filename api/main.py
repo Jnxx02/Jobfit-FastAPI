@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 @app.get("/")
-async def welcome():
+async def homepage():
     return "Welcome to the Jobfit API!"
 
 # Muat model TF-IDF dan data pre-processing yang sudah disimpan
