@@ -44,6 +44,19 @@ def match_job(user_input: UserInput):
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
 
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to the FastAPI application!"}
+
+@app.get("/model_info")
+async def get_model_info():
+    # Contoh informasi yang bisa dikembalikan
+    return {
+        "model": "TF-IDF",
+        "status": "loaded",
+        "num_features": len(tfidf_model.get_feature_names_out())
+    }
+
 # Jalankan server menggunakan Uvicorn (asynchronous server)
 # Buka terminal dan jalankan:
 # uvicorn main:app --reload
