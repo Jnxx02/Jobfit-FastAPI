@@ -47,3 +47,13 @@ def match_job(user_input: UserInput):
 
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Ubah sesuai dengan asal yang diizinkan
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
