@@ -2,7 +2,3 @@ fastapi
 uvicorn
 joblib
 scikit-learn
-pandas
-numpy
-matplotlib
-seaborn
