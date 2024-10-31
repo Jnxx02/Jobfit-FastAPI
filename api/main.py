@@ -45,8 +45,8 @@ def match_job(user_input: UserInput):
     return recommended_jobs.to_dict(orient="records")
 
 @app.get("/")
-async def read_root():
-    return {"message": "Welcome to the Jobfit API!"}
+async def welcome():
+    return "Welcome to the Jobfit API!"
 
 @app.get("/model_info")
 async def get_model_info():
