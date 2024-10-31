@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import joblib
 from sklearn.metrics.pairwise import cosine_similarity
+from fastapi.middleware.cors import CORSMiddleware
 
 # Data yang dikirimkan oleh user
 class UserInput(BaseModel):
@@ -10,6 +11,15 @@ class UserInput(BaseModel):
 
 # Inisialisasi FastAPI
 app = FastAPI()
+
+# Konfigurasi CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Mengizinkan semua asal
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def welcome():
@@ -47,13 +57,3 @@ def match_job(user_input: UserInput):
 
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
-
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["/match_job"],  # Ubah sesuai dengan asal yang diizinkan
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
