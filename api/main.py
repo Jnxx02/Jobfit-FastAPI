@@ -42,21 +42,47 @@ async def match_job(request: Request, skills: str = Form(...), experience: int =
     # Proses input dan hitung kecocokan
     user_input = f"{skills} {experience} years"
     user_vector = tfidf_model.transform([user_input])
-    similarity_scores = cosine_similarity(user_vector, tfidf_matrix)
-    match_percentage = np.max(similarity_scores) * 100
+    similarity_scores = cosine_similarity(user_vector, tfidf_matrix).flatten()
 
-    # Dapatkan perusahaan dan pekerjaan yang paling cocok
-    best_match_index = np.argmax(similarity_scores)
-    best_match = df_sorted.iloc[best_match_index]
+    # Dapatkan 5 kecocokan teratas
+    top_indices = np.argsort(similarity_scores)[-5:][::-1]
+    top_matches = df_sorted.iloc[top_indices]
+    top_matches['Match_Percentage'] = similarity_scores[top_indices] * 100
+
+    # Ambil kecocokan terbaik untuk pie chart
+    best_match = top_matches.iloc[0]
 
     return templates.TemplateResponse("match_result.html", {
         "request": request,
         "company": best_match['Company'],
         "job_role": best_match['Job_Role'],
-        "match_percentage": match_percentage
+        "match_percentage": best_match['Match_Percentage'],
+        "top_matches": top_matches.to_dict(orient="records")
     })
 
 @app.get("/companies_jobs", response_class=HTMLResponse)
 async def get_companies_jobs(request: Request):
     companies_jobs = df_sorted[['Company', 'Job_Role']].drop_duplicates()
     return templates.TemplateResponse("companies_jobs.html", {"request": request, "companies_jobs": companies_jobs.to_dict(orient="records")})
+
+@app.post("/top_matches")
+def top_matches(user_input: UserInput):
+    user_skills = user_input.skills.lower()
+    user_experience = user_input.experience
+    # Transform skill user menggunakan TF-IDF model
+    user_skill_tfidf = tfidf_model.transform([user_skills])
+    # Hitung similarity antara user skill dan deskripsi pekerjaan
+    skill_similarity = cosine_similarity(user_skill_tfidf, tfidf_matrix)
+    # Tambahkan kolom skill similarity dan hitung difference experience
+    df_sorted['Skill_Similarity'] = skill_similarity.flatten()
+    df_sorted['Experience_Diff'] = abs(df_sorted['Job Experience'] - user_experience)
+    # Sort berdasarkan skill similarity dan experience difference
+    top_jobs = df_sorted.sort_values(by=['Skill_Similarity', 'Experience_Diff'], ascending=[False, True])
+    # Ambil hasil top 5 pekerjaan yang paling cocok
+    recommended_jobs = top_jobs[['Job_Role', 'Company', 'Location', 'Skill_Similarity', 'Experience_Diff']].head(5)
+    if recommended_jobs.empty:
+        raise HTTPException(status_code=404, detail="No matching jobs found")
+
+    # Kembalikan hasil rekomendasi
+    return recommended_jobs.to_dict(orient="records")
+

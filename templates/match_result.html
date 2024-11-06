@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Match Result</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            max-width: 300px;
+            max-height: 300px;
+            margin: auto;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 0 70px;
+        }
+        td {
+            vertical-align: top;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Top Job Matches</h1>
+    <table>
+        <tr>
+            {% for match in top_matches %}
+            <td>
+                <div class="chart-container">
+                    <h3>{{ match.Company }} - {{ match.Job_Role }}</h3>
+                    <canvas id="chart{{ loop.index }}"></canvas>
+                    <p>Match Percentage: {{ match.Match_Percentage | round(2) }}%</p>
+                </div>
+            </td>
+            {% if loop.index is divisibleby 2 %}
+        </tr><tr>
+            {% endif %}
+            {% endfor %}
+        </tr>
+    </table>
+    <script>
+        {% for match in top_matches %}
+        var ctx{{ loop.index }} = document.getElementById('chart{{ loop.index }}').getContext('2d');
+        new Chart(ctx{{ loop.index }}, {
+            type: 'pie',
+            data: {
+                labels: ['Match', 'Non-Match'],
+                datasets: [{
+                    data: [{{ match.Match_Percentage | round(2) }}, {{ (100 - match.Match_Percentage) | round(2) }}],
+                    backgroundColor: ['#36A2EB', '#FF6384']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed.toFixed(2) + '%';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endfor %}
+    </script>
+</body>
+</html>
