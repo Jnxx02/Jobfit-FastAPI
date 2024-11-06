@@ -57,3 +57,11 @@ def match_job(user_input: UserInput):
 
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
+
+@app.get("/companies_jobs")
+def get_companies_jobs():
+    # Ambil kolom 'Company' dan 'Job_Role' dari dataframe
+    companies_jobs = df_sorted[['Company', 'Job_Role']].drop_duplicates()
+
+    # Kembalikan hasil dalam bentuk list of dictionaries
+    return companies_jobs.to_dict(orient="records")
