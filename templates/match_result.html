@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Match Result</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Job Match Result</h1>
+    <p>Company: {{ company }}</p>
+    <p>Job Role: {{ job_role }}</p>
+    <canvas id="matchChart" width="400" height="400"></canvas>
+    <script>
+        var matchPercentage = {{ match_percentage | default(0) }};
+        var nonMatchPercentage = 100 - matchPercentage;
+
+        var ctx = document.getElementById('matchChart').getContext('2d');
+        var matchChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Match', 'Non-Match'],
+                datasets: [{
+                    data: [matchPercentage, nonMatchPercentage],
+                    backgroundColor: ['#36A2EB', '#FF6384']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed + '%';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
