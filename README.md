@@ -19,4 +19,8 @@ Endpointnya bisa semua diakses dengan link beriku `https://jobfit-api-0ea5f77748
 
 `/top_matches` : tampilkan 5 matching job terbaik berdasarkan skills dan experience (sama seperti fungsi yang kemarin).
 
+Saat akan menguji endpoint `/top_matches` di postman, jangan lupa ditambahkan ke `Header`-nya:
+- `Key` : `Content-Type`
+- `Value` : `application/json`.
+
 ![image](https://github.com/user-attachments/assets/c1450780-d1b8-4025-97fa-e4077859b56a)
