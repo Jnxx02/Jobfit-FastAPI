@@ -12,7 +12,7 @@
     <p>Job Role: {{ job_role }}</p>
     <canvas id="matchChart" width="400" height="400"></canvas>
     <script>
-        var matchPercentage = {{ match_percentage | default(0) }};
+        var matchPercentage = {{ match_percentage | default(0) | tojson }};
         var nonMatchPercentage = 100 - matchPercentage;
 
         var ctx = document.getElementById('matchChart').getContext('2d');
