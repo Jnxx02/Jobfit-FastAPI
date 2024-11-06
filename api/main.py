@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import joblib
 from sklearn.metrics.pairwise import cosine_similarity
@@ -9,8 +11,9 @@ class UserInput(BaseModel):
     skills: str
     experience: int
 
-# Inisialisasi FastAPI
+# Inisialisasi FastAPI dan Jinja2
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 # Konfigurasi CORS
 app.add_middleware(
@@ -21,9 +24,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def welcome():
-    return "Welcome to the Jobfit API!"
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    # Ambil daftar skill dari model atau data yang relevan
+    skills_list = ["Python", "Java", "Data Analysis", "Machine Learning"]  # Contoh daftar skill
+    return templates.TemplateResponse("index.html", {"request": request, "skills": skills_list})
 
 # Muat model TF-IDF dan data pre-processing yang sudah disimpan
 tfidf_model = joblib.load('models/tfidf_model.pkl')
@@ -58,10 +63,7 @@ def match_job(user_input: UserInput):
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
 
-@app.get("/companies_jobs")
-def get_companies_jobs():
-    # Ambil kolom 'Company' dan 'Job_Role' dari dataframe
+@app.get("/companies_jobs", response_class=HTMLResponse)
+async def get_companies_jobs(request: Request):
     companies_jobs = df_sorted[['Company', 'Job_Role']].drop_duplicates()
-
-    # Kembalikan hasil dalam bentuk list of dictionaries
-    return companies_jobs.to_dict(orient="records")
+    return templates.TemplateResponse("companies_jobs.html", {"request": request, "companies_jobs": companies_jobs.to_dict(orient="records")})

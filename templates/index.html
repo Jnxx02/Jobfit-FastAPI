@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobfit API</title>
+</head>
+<body>
+    <h1>Welcome to the Jobfit API!</h1>
+    <form action="/match_job" method="post">
+        <label for="skills">Select your skills:</label>
+        <select name="skills" id="skills">
+            {% for skill in skills %}
+            <option value="{{ skill }}">{{ skill }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="experience">Experience (years):</label>
+        <input type="range" id="experience" name="experience" min="0" max="30" value="5" oninput="this.nextElementSibling.value = this.value">
+        <output>5</output>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
