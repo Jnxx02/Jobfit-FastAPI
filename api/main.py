@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import joblib
@@ -64,6 +64,11 @@ async def match_job(request: Request, skills: str = Form(...), experience: int =
 async def get_companies_jobs(request: Request):
     companies_jobs = df_sorted[['Company', 'Job_Role']].drop_duplicates()
     return templates.TemplateResponse("companies_jobs.html", {"request": request, "companies_jobs": companies_jobs.to_dict(orient="records")})
+
+@app.get("/companies_jobs/json")
+async def get_companies_jobs_json():
+    companies_jobs = df_sorted[['Company', 'Job_Role']].drop_duplicates()
+    return JSONResponse(content=companies_jobs.to_dict(orient="records"))
 
 @app.post("/top_matches")
 def top_matches(user_input: UserInput):
