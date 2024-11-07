@@ -18,6 +18,7 @@ Endpointnya bisa semua diakses dengan link beriku `https://jobfit-api-0ea5f77748
 ![image](https://github.com/user-attachments/assets/62a56241-4618-49d4-b7fa-66969b47a18b)
 
 `/companies_jobs/json` : sama dengan endpoint `/companies_jobs` hanya saja pada endpoint ini, keluarannya merupakan file bertipe json.
+
 ![image](https://github.com/user-attachments/assets/71efbf0f-b401-4e9d-95d9-9a1f088c76a5)
 
 `/top_matches` : tampilkan 5 matching job terbaik berdasarkan skills dan experience (sama seperti fungsi yang kemarin).
