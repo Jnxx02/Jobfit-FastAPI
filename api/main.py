@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Form
+from fastapi import FastAPI, HTTPException, Request, Form, Query, Body
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -8,12 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 
 # Data yang dikirimkan oleh user
-class UserInput(BaseModel):
+class JobMatchInput(BaseModel):
     skills: str
     experience: int
-
-class CheckMatchInput(BaseModel):
     company: str
+    job_role: str
+
+class TopMatchesInput(BaseModel):
     skills: str
     experience: int
 
@@ -43,26 +44,39 @@ df_sorted = joblib.load('models/df_sorted.pkl')
 
 # Endpoint untuk job matching
 @app.post("/match_job", response_class=HTMLResponse)
-async def match_job(request: Request, skills: str = Form(...), experience: int = Form(...)):
+async def match_job(
+    request: Request,
+    skills: str = Form(...),
+    experience: int = Form(...),
+    company: str = Form(...),
+    job_role: str = Form(...)
+):
     # Proses input dan hitung kecocokan
     user_input = f"{skills} {experience} years"
     user_vector = tfidf_model.transform([user_input])
     similarity_scores = cosine_similarity(user_vector, tfidf_matrix).flatten()
 
-    # Dapatkan 5 kecocokan teratas
-    top_indices = np.argsort(similarity_scores)[-5:][::-1]
-    top_matches = df_sorted.iloc[top_indices]
-    top_matches['Match_Percentage'] = similarity_scores[top_indices] * 100
+    # Filter berdasarkan company dan job role
+    filtered_jobs = df_sorted[
+        (df_sorted['Company'].str.contains(company, case=False)) &
+        (df_sorted['Job_Role'].str.contains(job_role, case=False))
+    ]
 
-    # Ambil kecocokan terbaik untuk pie chart
-    best_match = top_matches.iloc[0]
+    if filtered_jobs.empty:
+        raise HTTPException(status_code=404, detail="No matching jobs found for the specified company and job role")
 
+    # Calculate match percentage for filtered jobs
+    valid_indices = filtered_jobs.index.intersection(range(len(similarity_scores)))
+    filtered_jobs = filtered_jobs.loc[valid_indices]
+    filtered_jobs['Match_Percentage'] = similarity_scores[valid_indices] * 100
+
+    if filtered_jobs.empty or filtered_jobs['Match_Percentage'].isnull().all():
+        raise HTTPException(status_code=404, detail="No valid matches found after filtering")
+
+    # Return all matches
     return templates.TemplateResponse("match_result.html", {
         "request": request,
-        "company": best_match['Company'],
-        "job_role": best_match['Job_Role'],
-        "match_percentage": best_match['Match_Percentage'],
-        "top_matches": top_matches.to_dict(orient="records")
+        "top_matches": filtered_jobs.to_dict(orient="records")
     })
 
 @app.get("/companies_jobs", response_class=HTMLResponse)
@@ -76,7 +90,7 @@ async def get_companies_jobs_json():
     return JSONResponse(content=companies_jobs.to_dict(orient="records"))
 
 @app.post("/top_matches")
-def top_matches(user_input: UserInput):
+def top_matches(user_input: TopMatchesInput):
     user_skills = user_input.skills.lower()
     user_experience = user_input.experience
     # Transform skill user menggunakan TF-IDF model
@@ -96,35 +110,30 @@ def top_matches(user_input: UserInput):
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
 
-@app.post("/check_match", response_class=JSONResponse)
-async def check_match(input_data: CheckMatchInput):
-    # Ambil data dari input
-    company = input_data.company
-    skills = input_data.skills
-    experience = input_data.experience
-
+@app.post("/match_job/json", response_class=JSONResponse)
+async def match_job_json(input_data: JobMatchInput):
     # Proses input dan hitung kecocokan
-    user_input = f"{skills} {experience} years"
+    user_input = f"{input_data.skills} {input_data.experience} years"
     user_vector = tfidf_model.transform([user_input])
-    
-    # Ambil data pekerjaan dari perusahaan yang diberikan
-    company_jobs = df_sorted[df_sorted['Company'] == company]
-    
-    if company_jobs.empty:
-        raise HTTPException(status_code=404, detail="No jobs found for the specified company")
+    similarity_scores = cosine_similarity(user_vector, tfidf_matrix).flatten()
 
-    # Hitung similarity untuk setiap pekerjaan di perusahaan tersebut
-    company_tfidf_matrix = tfidf_model.transform(company_jobs['Job_Description'])
-    similarity_scores = cosine_similarity(user_vector, company_tfidf_matrix).flatten()
+    # Filter berdasarkan company dan job role
+    filtered_jobs = df_sorted[
+        (df_sorted['Company'].str.contains(input_data.company, case=False)) &
+        (df_sorted['Job_Role'].str.contains(input_data.job_role, case=False))
+    ]
 
-    # Dapatkan kecocokan terbaik
-    best_match_index = np.argmax(similarity_scores)
-    best_match = company_jobs.iloc[best_match_index]
-    match_percentage = similarity_scores[best_match_index] * 100
+    if filtered_jobs.empty:
+        raise HTTPException(status_code=404, detail="No matching jobs found for the specified company and job role")
 
-    return {
-        "company": best_match['Company'],
-        "job_role": best_match['Job_Role'],
-        "match_percentage": match_percentage
-    }
+    # Calculate match percentage for filtered jobs
+    valid_indices = filtered_jobs.index.intersection(range(len(similarity_scores)))
+    filtered_jobs = filtered_jobs.loc[valid_indices]
+    filtered_jobs['Match_Percentage'] = similarity_scores[valid_indices] * 100
+
+    if filtered_jobs.empty or filtered_jobs['Match_Percentage'].isnull().all():
+        raise HTTPException(status_code=404, detail="No valid matches found after filtering")
+
+    # Return all matches as JSON
+    return JSONResponse(content=filtered_jobs.to_dict(orient="records"))
 
