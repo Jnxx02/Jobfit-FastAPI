@@ -91,3 +91,30 @@ def top_matches(user_input: UserInput):
     # Kembalikan hasil rekomendasi
     return recommended_jobs.to_dict(orient="records")
 
+@app.post("/check_match", response_class=JSONResponse)
+async def check_match(company: str, skills: str = Form(...), experience: int = Form(...)):
+    # Proses input dan hitung kecocokan
+    user_input = f"{skills} {experience} years"
+    user_vector = tfidf_model.transform([user_input])
+    
+    # Ambil data pekerjaan dari perusahaan yang diberikan
+    company_jobs = df_sorted[df_sorted['Company'] == company]
+    
+    if company_jobs.empty:
+        raise HTTPException(status_code=404, detail="No jobs found for the specified company")
+
+    # Hitung similarity untuk setiap pekerjaan di perusahaan tersebut
+    company_tfidf_matrix = tfidf_model.transform(company_jobs['Job_Description'])
+    similarity_scores = cosine_similarity(user_vector, company_tfidf_matrix).flatten()
+
+    # Dapatkan kecocokan terbaik
+    best_match_index = np.argmax(similarity_scores)
+    best_match = company_jobs.iloc[best_match_index]
+    match_percentage = similarity_scores[best_match_index] * 100
+
+    return {
+        "company": best_match['Company'],
+        "job_role": best_match['Job_Role'],
+        "match_percentage": match_percentage
+    }
+
