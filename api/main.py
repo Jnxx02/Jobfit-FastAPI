@@ -12,6 +12,11 @@ class UserInput(BaseModel):
     skills: str
     experience: int
 
+class CheckMatchInput(BaseModel):
+    company: str
+    skills: str
+    experience: int
+
 # Inisialisasi FastAPI dan Jinja2
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -92,7 +97,12 @@ def top_matches(user_input: UserInput):
     return recommended_jobs.to_dict(orient="records")
 
 @app.post("/check_match", response_class=JSONResponse)
-async def check_match(company: str, skills: str = Form(...), experience: int = Form(...)):
+async def check_match(input_data: CheckMatchInput):
+    # Ambil data dari input
+    company = input_data.company
+    skills = input_data.skills
+    experience = input_data.experience
+
     # Proses input dan hitung kecocokan
     user_input = f"{skills} {experience} years"
     user_vector = tfidf_model.transform([user_input])
